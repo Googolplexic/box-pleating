@@ -20,7 +20,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class BoxPleatingPattern:
     """
     A class representing a box-pleating origami pattern.
@@ -276,7 +275,7 @@ class BoxPleatingPattern:
                     "kawasaki_details": kawasaki_details,
                 }
                 violations.append(violation)
-                self._print_violation_details(
+                self._log_violation_details(
                     vertex,
                     maekawa_valid,
                     kawasaki_valid,
@@ -286,38 +285,42 @@ class BoxPleatingPattern:
 
         return is_foldable, violations
 
-    def _print_violation_details(
-            self,
-            vertex: Point,
-            maekawa_valid: bool,
-            kawasaki_valid: bool,
-            maekawa_details: Dict,
-            kawasaki_details: Dict,
-        ) -> None:
-            """Log detailed information about theorem violations at a vertex."""
-            if not maekawa_valid:
-                logger.warning("Maekawa's theorem violated at vertex (%f, %f):", vertex.x, vertex.y)
-                logger.debug("Mountain creases: %d", maekawa_details['mountain_count'])
-                logger.debug("Valley creases: %d", maekawa_details['valley_count'])
-                logger.debug("Difference: %d (should be 2)", maekawa_details['difference'])
+    def _log_violation_details(
+        self,
+        vertex: Point,
+        maekawa_valid: bool,
+        kawasaki_valid: bool,
+        maekawa_details: Dict,
+        kawasaki_details: Dict,
+    ) -> None:
+        """Log detailed information about theorem violations at a vertex."""
+        logger.info(f"\nViolation at vertex ({vertex.x}, {vertex.y}):")
+        if not maekawa_valid:
+            logger.info(f"  Maekawa's theorem violated:")
+            logger.info(f"    Mountain creases: {maekawa_details['mountain_count']}")
+            logger.info(f"    Valley creases: {maekawa_details['valley_count']}")
+            logger.info(f"    Difference: {maekawa_details['difference']} (should be 2)")
 
-            if not kawasaki_valid:
-                logger.warning("Kawasaki's theorem violated at vertex (%f, %f):", vertex.x, vertex.y)
-                if "error" in kawasaki_details:
-                    logger.debug("%s", kawasaki_details['error'])
-                    logger.debug(
-                        "Found %d creases, need %d",
-                        kawasaki_details['angle_count'],
-                        kawasaki_details['min_required']
-                    )
-                else:
-                    logger.debug("Sum of odd angles: %.2f°", kawasaki_details['sum_odd'])
-                    logger.debug("Sum of even angles: %.2f°", kawasaki_details['sum_even'])
-                logger.debug("Difference: %.2f°", kawasaki_details['angle_difference'])
-                logger.debug(
-                    "Angles: %s",
-                    [f'{a:.1f}°' for a in kawasaki_details['angles']]
+        if not kawasaki_valid:
+            logger.info(f"  Kawasaki's theorem violated:")
+            if "error" in kawasaki_details:
+                logger.info(f"    {kawasaki_details['error']}")
+                logger.info(
+                    f"    Found {kawasaki_details['angle_count']} creases, "
+                    f"need {kawasaki_details['min_required']}"
                 )
+            else:
+                logger.info(f"    Sum of odd angles: {kawasaki_details['sum_odd']:.2f}°")
+                logger.info(
+                    f"    Sum of even angles: {kawasaki_details['sum_even']:.2f}°"
+                )
+                logger.info(
+                    f"    Difference: {kawasaki_details['angle_difference']:.2f}°"
+                )
+                logger.info(
+                    f"    Angles: {[f'{a:.1f}°' for a in kawasaki_details['angles']]}"
+                )
+
     def is_valid_pattern(self) -> Tuple[bool, Dict]:
         """Check if the pattern is valid by verifying flat-foldability and intersections."""
         is_foldable, violations = self.is_flat_foldable()
