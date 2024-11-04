@@ -1,4 +1,5 @@
-# box-pleating
+# box-pleating: [PyPI link](https://pypi.org/project/box-pleating/1.0.0/)
+
 
 A Python package for creating, analyzing, and validating box-pleating origami patterns. Provides tools for working with box-pleating patterns including FOLD format conversion and flat-foldability validation.
 
@@ -39,22 +40,25 @@ fold_data = converter.to_fold(pattern)
 
 ### Box-Pleating Pattern Creation
 - Create patterns on a customizable grid
-- Add mountain and valley folds
-- Automatic intersection handling
-- Grid-based validation ensuring 45° and 90° angles
+- Add mountain, valley and border folds
+- Automatic intersection and overlap handling
+- Grid-based validation ensuring 45° and 90° angles (No Pythagorean Stretches, unfortunately)
 
 ### Pattern Validation
 - Flat-foldability checking using:
   - Kawasaki's theorem (alternating angles sum to 180°)
   - Maekawa's theorem (mountain/valley crease difference is 2)
 - Crease intersection detection
-- Grid alignment verification
+- Grid alignment verification, kind of
 
 ### FOLD Format Support
 - Import from FOLD format
 - Export to FOLD format
-- Automatic grid size optimization
+- Automatic grid size optimization, kind of
 - Redundant vertex removal
+
+### Coming Soon (Maybe)
+- Crease removal/changing
 
 ## Detailed Usage
 
