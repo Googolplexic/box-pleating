@@ -1,0 +1,73 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "box-pleating"
+version = "1.0.0"
+authors = [
+    { name="Coleman Lai", email="colemancflai@yahoo.com" },
+]
+description = "Box pleating crease pattern creation and flat-foldability with FOLD file import/export"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+]
+
+[project.urls]
+Homepage = "https://github.com/Googolplexic/box-pleating"
+Issues = "https://github.com/Googolplexic/box-pleating/issues"
+
+
+[tool.setuptools.packages]
+find = {} 
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+]
+[tool.hatch.build.targets.sdist]
+
+[tool.hatch.envs.test]
+dependencies = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+]
+
+[tool.hatch.envs.lint]
+dependencies = [
+    "black>=22.3.0",
+    "flake8>=4.0.1",
+    "isort>=5.10.1",
+    "mypy>=0.950",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py37']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.7"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true

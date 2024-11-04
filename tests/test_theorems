@@ -1,0 +1,146 @@
+"""Tests for origami theorem validators."""
+import pytest
+import math
+import numpy as np
+from box_pleating.theorems import (
+    sort_vectors_counterclockwise,
+    calculate_angles,
+    check_kawasaki_theorem,
+    check_maekawa_theorem
+)
+from box_pleating.models import Point, Crease, CreaseType
+
+@pytest.fixture
+def vertex_at_origin():
+    """Create a vertex at origin with common crease patterns."""
+    return Point(0, 0)
+
+@pytest.fixture
+def simple_mountain_valley_creases(vertex_at_origin):
+    """Create a simple valid mountain-valley pattern."""
+    return [
+        Crease(vertex_at_origin, Point(1, 0), CreaseType.MOUNTAIN),
+        Crease(vertex_at_origin, Point(0, 1), CreaseType.VALLEY),
+        Crease(vertex_at_origin, Point(-1, 0), CreaseType.MOUNTAIN),
+        Crease(vertex_at_origin, Point(0, -1), CreaseType.VALLEY)
+    ]
+
+@pytest.fixture
+def kawasaki_valid_creases(vertex_at_origin):
+    """Create a pattern that satisfies Kawasaki's theorem."""
+    return [
+        Crease(vertex_at_origin, Point(1, 0), CreaseType.MOUNTAIN),
+        Crease(vertex_at_origin, Point(1, 1), CreaseType.VALLEY),
+        Crease(vertex_at_origin, Point(0, 1), CreaseType.MOUNTAIN),
+        Crease(vertex_at_origin, Point(-1, 1), CreaseType.VALLEY),
+        Crease(vertex_at_origin, Point(-1, 0), CreaseType.MOUNTAIN),
+        Crease(vertex_at_origin, Point(-1, -1), CreaseType.VALLEY),
+    ]
+
+@pytest.fixture
+def kawasaki_invalid_creases(vertex_at_origin):
+    """Create a pattern that violates Kawasaki's theorem."""
+    return [
+        Crease(vertex_at_origin, Point(1, 0), CreaseType.MOUNTAIN),
+        Crease(vertex_at_origin, Point(0, 1), CreaseType.VALLEY),
+        Crease(vertex_at_origin, Point(-1, 0), CreaseType.MOUNTAIN),
+    ]
+
+def test_sort_vectors_counterclockwise(vertex_at_origin, simple_mountain_valley_creases):
+    """Test sorting vectors in counterclockwise order."""
+    sorted_vectors = sort_vectors_counterclockwise(vertex_at_origin, simple_mountain_valley_creases)
+    angles = []
+    
+    for vec, _ in sorted_vectors:
+        angle = math.atan2(vec[1], vec[0])
+        if angle < 0:
+            angle += 2 * math.pi
+        angles.append(angle)
+    
+    # Check angles are in ascending order
+    assert all(angles[i] <= angles[i + 1] for i in range(len(angles) - 1))
+
+def test_calculate_angles(vertex_at_origin, simple_mountain_valley_creases):
+    """Test angle calculation between creases."""
+    angles = calculate_angles(vertex_at_origin, simple_mountain_valley_creases)
+    
+    # For perpendicular creases, angles should be 90 degrees
+    assert len(angles) == 4
+    assert all(abs(angle - 90) < 1e-10 for angle in angles)
+
+@pytest.mark.parametrize("creases,expected_valid", [
+    ("kawasaki_valid_creases", True),
+    ("kawasaki_invalid_creases", False),
+])
+def test_check_kawasaki_theorem(request, vertex_at_origin, creases, expected_valid):
+    """Test Kawasaki's theorem validation."""
+    creases = request.getfixturevalue(creases)
+    is_valid, details = check_kawasaki_theorem(vertex_at_origin, creases, grid_size=10)
+    assert is_valid == expected_valid
+    assert "angle_count" in details
+    if not expected_valid:
+        assert details.get("error") or details.get("angle_difference", 0) > 0.1
+
+def test_check_maekawa_theorem(vertex_at_origin, simple_mountain_valley_creases):
+    """Test Maekawa's theorem validation."""
+    is_valid, details = check_maekawa_theorem(vertex_at_origin, simple_mountain_valley_creases, grid_size=10)
+    assert is_valid
+    assert details["mountain_count"] - details["valley_count"] == 2
+
+def test_maekawa_invalid_pattern(vertex_at_origin):
+    """Test Maekawa's theorem with invalid pattern."""
+    creases = [
+        Crease(vertex_at_origin, Point(1, 0), CreaseType.MOUNTAIN),
+        Crease(vertex_at_origin, Point(0, 1), CreaseType.MOUNTAIN),
+        Crease(vertex_at_origin, Point(-1, 0), CreaseType.MOUNTAIN),
+    ]
+    
+    is_valid, details = check_maekawa_theorem(vertex_at_origin, creases, grid_size=10)
+    assert not is_valid
+    assert details["mountain_count"] - details["valley_count"] != 2
+
+def test_edge_vertex_theorems():
+    """Test theorem validation for edge vertices."""
+    edge_vertex = Point(0, 10)  # On grid edge
+    creases = [
+        Crease(edge_vertex, Point(1, 10), CreaseType.MOUNTAIN),
+        Crease(edge_vertex, Point(0, 9), CreaseType.VALLEY),
+    ]
+    
+    # Edge vertices should always be valid
+    kawasaki_valid, _ = check_kawasaki_theorem(edge_vertex, creases, grid_size=10)
+    maekawa_valid, _ = check_maekawa_theorem(edge_vertex, creases, grid_size=10)
+    
+    assert kawasaki_valid
+    assert maekawa_valid
+
+def test_angle_calculation_precision():
+    """Test precision of angle calculations."""
+    vertex = Point(0, 0)
+    creases = [
+        Crease(vertex, Point(1, 0), CreaseType.MOUNTAIN),
+        Crease(vertex, Point(math.cos(0.1), math.sin(0.1)), CreaseType.VALLEY),
+    ]
+    
+    angles = calculate_angles(vertex, creases)
+    assert abs(angles[0] - math.degrees(0.1)) < 1e-10
+
+@pytest.mark.parametrize("angle_degrees,expected_valid", [
+    (180, True),   # Sum of alternate angles = 180°
+    (170, False),  # Sum < 180°
+    (190, False),  # Sum > 180°
+])
+def test_kawasaki_theorem_angles(vertex_at_origin, angle_degrees):
+    """Test Kawasaki's theorem with different angle configurations."""
+    angle_rad = math.radians(angle_degrees)
+    creases = [
+        Crease(vertex_at_origin, Point(1, 0), CreaseType.MOUNTAIN),
+        Crease(vertex_at_origin, Point(math.cos(angle_rad), math.sin(angle_rad)), 
+               CreaseType.VALLEY),
+        Crease(vertex_at_origin, Point(-1, 0), CreaseType.MOUNTAIN),
+        Crease(vertex_at_origin, Point(math.cos(angle_rad), -math.sin(angle_rad)), 
+               CreaseType.VALLEY),
+    ]
+    
+    is_valid, _ = check_kawasaki_theorem(vertex_at_origin, creases, grid_size=10)
+    assert is_valid == (angle_degrees == 180)

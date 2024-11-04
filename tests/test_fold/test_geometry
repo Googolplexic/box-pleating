@@ -1,0 +1,164 @@
+"""Tests for FOLD format geometric operations."""
+import pytest
+import numpy as np
+from box_pleating.fold.geometry import (
+    compute_minimum_spacing,
+    compute_faces_vertices,
+    compute_scale_factors
+)
+from box_pleating.models import Point
+
+@pytest.fixture
+def sample_vertices():
+    """Sample vertices for testing."""
+    return [
+        [0.0, 0.0],
+        [1.0, 0.0],
+        [1.0, 1.0],
+        [0.0, 1.0]
+    ]
+
+@pytest.fixture
+def sample_edges():
+    """Sample edges for testing."""
+    return [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [3, 0]
+    ]
+
+def test_compute_minimum_spacing(sample_vertices):
+    """Test minimum spacing computation."""
+    # Standard case
+    spacing = compute_minimum_spacing(sample_vertices)
+    assert spacing == 1.0
+    
+    # Empty vertices
+    assert compute_minimum_spacing([]) == 1.0
+    
+    # Single vertex
+    assert compute_minimum_spacing([[0.0, 0.0]]) == 1.0
+    
+    # Very close vertices
+    vertices = [[0.0, 0.0], [0.1, 0.0]]
+    assert compute_minimum_spacing(vertices) == 0.1
+
+def test_compute_faces_vertices(sample_vertices, sample_edges):
+    """Test face computation from vertices and edges."""
+    faces = compute_faces_vertices(sample_vertices, sample_edges)
+    
+    # Should find one face (square)
+    assert len(faces) == 1
+    assert len(faces[0]) == 4  # Square has 4 vertices
+    
+    # Face should be in counterclockwise order
+    face = faces[0]
+    area = 0
+    for i in range(len(face)):
+        j = (i + 1) % len(face)
+        vi = sample_vertices[face[i]]
+        vj = sample_vertices[face[j]]
+        area += vi[0] * vj[1] - vj[0] * vi[1]
+    assert area > 0  # Positive area indicates CCW ordering
+
+def test_compute_faces_vertices_complex():
+    """Test face computation with more complex patterns."""
+    vertices = [
+        [0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0],  # Outer square
+        [0.5, 0.5]  # Center point
+    ]
+    edges = [
+        [0, 1], [1, 2], [2, 3], [3, 0],  # Outer square
+        [0, 4], [1, 4], [2, 4], [3, 4]   # Diagonals
+    ]
+    
+    faces = compute_faces_vertices(vertices, edges)
+    
+    # Should find 4 triangular faces
+    assert len(faces) == 4
+    assert all(len(face) == 3 for face in faces)
+
+def test_compute_scale_factors():
+    """Test scale factor computation."""
+    coords = [
+        [0.0, 0.0],
+        [2.0, 0.0],
+        [2.0, 2.0],
+        [0.0, 2.0]
+    ]
+    
+    scale, min_x, min_y, center_x, center_y = compute_scale_factors(coords)
+    
+    assert scale == 200.0  # 400 / max_dimension(2.0)
+    assert min_x == 0.0
+    assert min_y == 0.0
+    assert center_x == 1.0
+    assert center_y == 1.0
+
+@pytest.mark.parametrize("coords,expected_scale", [
+    ([], 1.0),  # Empty coords
+    ([[0.0, 0.0]], 1.0),  # Single point
+    ([[0.0, 0.0], [1.0, 0.0]], 400.0),  # Line of length 1
+    ([[0.0, 0.0], [10.0, 0.0]], 40.0),  # Line of length 10
+])
+def test_scale_factors_special_cases(coords, expected_scale):
+    """Test scale factor computation for special cases."""
+    scale, *_ = compute_scale_factors(coords)
+    assert abs(scale - expected_scale) < 1e-10
+
+def test_face_computation_edge_cases():
+    """Test face computation with edge cases."""
+    # Single triangle
+    vertices = [[0.0, 0.0], [1.0, 0.0], [0.5, 1.0]]
+    edges = [[0, 1], [1, 2], [2, 0]]
+    faces = compute_faces_vertices(vertices, edges)
+    assert len(faces) == 1
+    assert len(faces[0]) == 3
+    
+    # Non-planar pattern
+    vertices = [
+        [0.0, 0.0], [1.0, 0.0],
+        [0.0, 1.0], [1.0, 1.0]
+    ]
+    edges = [
+        [0, 1], [1, 3],
+        [3, 2], [2, 0],
+        [0, 3]  # Diagonal
+    ]
+    faces = compute_faces_vertices(vertices, edges)
+    assert len(faces) == 2  # Should find two triangular faces
+
+def test_minimum_spacing_numerical_stability():
+    """Test minimum spacing computation with very small distances."""
+    vertices = [
+        [0.0, 0.0],
+        [1e-10, 0.0],
+        [1.0, 0.0]
+    ]
+    spacing = compute_minimum_spacing(vertices)
+    assert spacing == 1e-10
+
+def test_face_orientation_consistency():
+    """Test that all faces are consistently oriented."""
+    vertices = [
+        [0.0, 0.0], [2.0, 0.0],
+        [2.0, 2.0], [0.0, 2.0],
+        [1.0, 1.0]  # Center point
+    ]
+    edges = [
+        [0, 1], [1, 2], [2, 3], [3, 0],  # Outer square
+        [0, 4], [1, 4], [2, 4], [3, 4]   # Diagonals
+    ]
+    
+    faces = compute_faces_vertices(vertices, edges)
+    
+    # Check that all faces have positive area (CCW orientation)
+    for face in faces:
+        area = 0
+        for i in range(len(face)):
+            j = (i + 1) % len(face)
+            vi = vertices[face[i]]
+            vj = vertices[face[j]]
+            area += vi[0] * vj[1] - vj[0] * vi[1]
+        assert area > 0

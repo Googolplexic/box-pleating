@@ -1,0 +1,142 @@
+"""Tests for geometric operations."""
+import pytest
+import numpy as np
+from box_pleating.geometry import (
+    segments_intersect,
+    find_intersection_point,
+    segments_overlap,
+    point_on_crease,
+    are_edges_parallel
+)
+from box_pleating.models import Point, Crease, CreaseType
+
+@pytest.fixture
+def points():
+    """Common points for testing."""
+    return {
+        'p1': Point(0, 0),
+        'p2': Point(2, 2),
+        'p3': Point(0, 2),
+        'p4': Point(2, 0),
+        'p5': Point(1, 1),
+        'p6': Point(3, 3),
+    }
+
+def test_segments_intersect(points):
+    """Test segment intersection detection."""
+    # Intersecting segments
+    assert segments_intersect(points['p1'], points['p2'], points['p3'], points['p4'])
+    
+    # Non-intersecting segments
+    assert not segments_intersect(points['p1'], points['p2'], points['p5'], points['p6'])
+    
+    # Parallel segments
+    assert not segments_intersect(points['p1'], points['p2'], 
+                                Point(1, 1), Point(3, 3))
+
+def test_segments_intersect_edge_cases(points):
+    """Test edge cases for segment intersection."""
+    # Segments sharing endpoint
+    assert not segments_intersect(points['p1'], points['p2'], 
+                                points['p2'], points['p3'])
+    
+    # Collinear segments
+    assert not segments_intersect(points['p1'], points['p2'], 
+                                points['p2'], Point(3, 3))
+    
+    # Tiny segments (numerical stability)
+    p1 = Point(0, 0)
+    p2 = Point(1e-10, 1e-10)
+    p3 = Point(0, 1e-10)
+    p4 = Point(1e-10, 0)
+    assert segments_intersect(p1, p2, p3, p4)
+
+def test_find_intersection_point(points):
+    """Test finding intersection points."""
+    # Regular intersection
+    intersection = find_intersection_point(points['p1'], points['p2'], 
+                                         points['p3'], points['p4'])
+    assert intersection is not None
+    assert abs(intersection.x - 1) < 1e-10
+    assert abs(intersection.y - 1) < 1e-10
+    
+    # No intersection
+    intersection = find_intersection_point(points['p1'], points['p2'], 
+                                         points['p5'], points['p6'])
+    assert intersection is None
+    
+    # Parallel lines
+    intersection = find_intersection_point(points['p1'], points['p2'], 
+                                         Point(1, 1), Point(3, 3))
+    assert intersection is None
+
+def test_segments_overlap(points):
+    """Test segment overlap detection."""
+    # Overlapping segments
+    assert segments_overlap(points['p1'], points['p2'], 
+                          Point(1, 1), Point(3, 3))
+    
+    # Non-overlapping parallel segments
+    assert not segments_overlap(points['p1'], points['p2'], 
+                              Point(4, 4), Point(5, 5))
+    
+    # Non-parallel segments
+    assert not segments_overlap(points['p1'], points['p2'], 
+                              points['p3'], points['p4'])
+
+def test_point_on_crease():
+    """Test point on crease detection."""
+    start = Point(0, 0)
+    end = Point(2, 2)
+    crease = Crease(start, end, CreaseType.MOUNTAIN)
+    
+    # Point on crease
+    assert point_on_crease(Point(1, 1), crease)
+    
+    # Point not on crease
+    assert not point_on_crease(Point(1, 0), crease)
+    
+    # Point beyond crease endpoints
+    assert not point_on_crease(Point(3, 3), crease)
+
+def test_are_edges_parallel():
+    """Test parallel edge detection."""
+    # Parallel edges
+    edge1 = Crease(Point(0, 0), Point(1, 1), CreaseType.MOUNTAIN)
+    edge2 = Crease(Point(1, 1), Point(2, 2), CreaseType.MOUNTAIN)
+    assert are_edges_parallel(edge1, edge2)
+    
+    # Non-parallel edges
+    edge3 = Crease(Point(0, 0), Point(1, 0), CreaseType.MOUNTAIN)
+    assert not are_edges_parallel(edge1, edge3)
+    
+    # Zero-length edge
+    edge4 = Crease(Point(0, 0), Point(0, 0), CreaseType.MOUNTAIN)
+    assert not are_edges_parallel(edge1, edge4)
+
+def test_geometric_edge_cases():
+    """Test various geometric edge cases."""
+    # Points very close together
+    p1 = Point(0, 0)
+    p2 = Point(1e-10, 1e-10)
+    p3 = Point(1e-10, 0)
+    p4 = Point(0, 1e-10)
+    
+    # Intersection with very small segments
+    intersection = find_intersection_point(p1, p2, p3, p4)
+    assert intersection is not None
+    
+    # Parallel detection with nearly parallel lines
+    edge1 = Crease(Point(0, 0), Point(1, 1), CreaseType.MOUNTAIN)
+    edge2 = Crease(Point(0, 0), Point(1, 1.000001), CreaseType.MOUNTAIN)
+    assert are_edges_parallel(edge1, edge2)
+
+@pytest.mark.parametrize("p1,p2,p3,p4,expected", [
+    (Point(0, 0), Point(1, 1), Point(0, 1), Point(1, 0), True),  # Intersecting
+    (Point(0, 0), Point(1, 0), Point(2, 0), Point(3, 0), False), # Collinear, non-overlapping
+    (Point(0, 0), Point(2, 0), Point(1, 0), Point(3, 0), True),  # Collinear, overlapping
+    (Point(0, 0), Point(1, 1), Point(2, 2), Point(3, 3), False), # Parallel, non-overlapping
+])
+def test_parameterized_segment_intersection(p1, p2, p3, p4, expected):
+    """Parameterized tests for segment intersection."""
+    assert segments_intersect(p1, p2, p3, p4) == expected
