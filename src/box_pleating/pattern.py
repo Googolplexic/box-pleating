@@ -13,7 +13,6 @@ from .grid_operations import (
     update_grid,
     should_remove_vertex,
     merge_creases,
-    is_boundary_vertex,
 )
 from .theorems import check_kawasaki_theorem, check_maekawa_theorem
 import logging
