@@ -1,4 +1,4 @@
-# box-pleating: [GitHub](https://github.com/Googolplexic/box-pleating), [PyPI](https://pypi.org/project/box-pleating/1.0.0/)
+# box-pleating: [GitHub](https://github.com/Googolplexic/box-pleating), [PyPI](https://pypi.org/project/box-pleating/1.0.1/)
 
 
 A Python package for creating, analyzing, and validating box-pleating origami patterns. Provides tools for working with box-pleating patterns including FOLD format conversion and flat-foldability validation.
