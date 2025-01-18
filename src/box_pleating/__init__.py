@@ -41,4 +41,4 @@ from .pattern import BoxPleatingPattern
 
 __all__ = ["Point", "Crease", "CreaseType", "BoxPleatingPattern", "configure_logger"]
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
