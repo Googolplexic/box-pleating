@@ -40,25 +40,25 @@ def compute_faces_vertices(
         vertices_vertices[v2].append(v1)
 
     # Sort vertices around each vertex counterclockwise
-    for v, neighbors in enumerate(vertices_vertices):
-        if not neighbors:
+    for v, neighbours in enumerate(vertices_vertices):
+        if not neighbours:
             continue
         # Calculate angles for sorting
         angles = []
-        for n in neighbors:
+        for n in neighbours:
             dx = vertices_coords[n][0] - vertices_coords[v][0]
             dy = vertices_coords[n][1] - vertices_coords[v][1]
             angle = math.atan2(dy, dx)
             angles.append((angle, n))
-        # Sort neighbors counterclockwise
+        # Sort neighbours counterclockwise
         sorted_pairs = sorted(angles)
         vertices_vertices[v] = [n for _, n in sorted_pairs]
 
-    # Build next mapping from sorted neighbors
+    # Build next mapping from sorted neighbours
     next_map = {}
-    for v, neighbors in enumerate(vertices_vertices):
-        for i, n in enumerate(neighbors):
-            prev = neighbors[(i - 1) % len(neighbors)]
+    for v, neighbours in enumerate(vertices_vertices):
+        for i, n in enumerate(neighbours):
+            prev = neighbours[(i - 1) % len(neighbours)]
             next_map[(v, n)] = prev
 
     # Find faces

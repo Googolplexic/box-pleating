@@ -125,8 +125,8 @@ class FoldConverter:
             vertices_vertices[v1].append(v2)
             vertices_vertices[v2].append(v1)
 
-        for neighbors in vertices_vertices:
-            neighbors.sort()
+        for neighbours in vertices_vertices:
+            neighbours.sort()
 
         # Create FOLD format dictionary
         return {

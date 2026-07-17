@@ -103,8 +103,8 @@ def assert_pattern_valid(pattern) -> List[str]:
     return violations
 
 
-def create_vertex_neighborhood(vertex: Point, radius: float = 1.0) -> List[Point]:
-    """Create a list of points in the neighborhood of a vertex."""
+def create_vertex_neighbourhood(vertex: Point, radius: float = 1.0) -> List[Point]:
+    """Create a list of points in the neighbourhood of a vertex."""
     angles = np.linspace(0, 2 * np.pi, 8, endpoint=False)
     return [
         Point(vertex.x + radius * np.cos(angle), vertex.y + radius * np.sin(angle))

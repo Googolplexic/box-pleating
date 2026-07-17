@@ -43,7 +43,7 @@ fold_data = converter.to_fold(pattern)
 
 ### Pattern Validation
 
-- Flat-foldability checking using:
+- Local flat-foldability checking using:
   - Kawasaki's theorem (alternating angles sum to 180°)
   - Maekawa's theorem (mountain/valley crease difference is 2)
 - Crease intersection detection
