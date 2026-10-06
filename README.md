@@ -2,6 +2,8 @@
 
 A Python library for creating and validating box-pleating origami patterns.
 
+Gallery write-up, with examples: https://www.colemanlai.com/portfolio/box-pleating
+
 ## Installation
 
 ```bash
